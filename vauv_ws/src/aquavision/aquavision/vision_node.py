@@ -11,8 +11,14 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from aquavision_msgs.msg import GateData
 
-import cv2
-import numpy as np
+try:
+    import cv2
+    import numpy as np
+except ImportError as e:
+    raise RuntimeError(
+        "OpenCV/NumPy failed to import. Ensure numpy<2.0 is installed: "
+        "pip install 'numpy<2'"
+    ) from e
 from cv_bridge import CvBridge
 from typing import Optional
 

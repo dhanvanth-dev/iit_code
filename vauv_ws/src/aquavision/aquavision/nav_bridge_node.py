@@ -66,6 +66,8 @@ class NavBridgeNode(Node):
         )
 
         # ── MAVLink connection ──────────────────────────────────────────
+        self._conn_str: str = conn_str
+        self._baud: int = baud
         self._master: Optional[mavutil.mavlink_connection] = None
         self._connected: bool = False
         self._armed: bool = False
@@ -75,12 +77,7 @@ class NavBridgeNode(Node):
         self.get_logger().info(
             f'🔌 Connecting to Pixhawk: {conn_str} @ {baud}'
         )
-        try:
-            self._master = mavutil.mavlink_connection(conn_str, baud=baud)
-            self.get_logger().info('📡 MAVLink connection object created')
-        except Exception as e:
-            self.get_logger().error(f'❌ MAVLink connection failed: {e}')
-            self._master = None
+        self._attempt_connection()
 
         # ── Current control commands ────────────────────────────────────
         # ArduSub manual_control_send ranges:
@@ -118,10 +115,63 @@ class NavBridgeNode(Node):
             1.0 / max(ctrl_rate, 1.0), self._control_tick
         )
 
+        # ── Reconnect timer (active only when disconnected) ─────────────
+        self._reconnect_timer: Optional[object] = None
+        if self._master is None:
+            self._start_reconnect_timer()
+
         self.get_logger().info(
             f'🚀 NavBridge started | HB={hb_rate}Hz | '
             f'Telem={telem_rate}Hz | Ctrl={ctrl_rate}Hz'
         )
+
+    # ── Connection management ────────────────────────────────────────────
+
+    def _attempt_connection(self) -> None:
+        """Try to establish MAVLink serial connection."""
+        try:
+            self._master = mavutil.mavlink_connection(
+                self._conn_str, baud=self._baud
+            )
+            self.get_logger().info('📡 MAVLink connection object created')
+        except Exception as e:
+            self.get_logger().warn(
+                f'⚠️ MAVLink connection failed: {e} — will retry'
+            )
+            self._master = None
+
+    def _start_reconnect_timer(self) -> None:
+        """Start a 2-second timer to retry MAVLink connection."""
+        if self._reconnect_timer is not None:
+            return  # Already running
+        self._reconnect_timer = self.create_timer(
+            2.0, self._reconnect_tick
+        )
+        self.get_logger().warn(
+            '🔄 MAVLink reconnect timer started (every 2s)'
+        )
+
+    def _reconnect_tick(self) -> None:
+        """Attempt to reconnect to MAVLink. Cancels itself on success."""
+        if self._master is not None:
+            # Already connected — cancel timer
+            if self._reconnect_timer is not None:
+                self._reconnect_timer.cancel()
+                self._reconnect_timer = None
+            return
+
+        self.get_logger().warn(
+            f'⚠️ MAVLink: retrying connection to {self._conn_str}...'
+        )
+        self._attempt_connection()
+
+        if self._master is not None:
+            self.get_logger().info(
+                '✅ MAVLink reconnected successfully'
+            )
+            if self._reconnect_timer is not None:
+                self._reconnect_timer.cancel()
+                self._reconnect_timer = None
 
     # ── Subscriber Callbacks ─────────────────────────────────────────────
 

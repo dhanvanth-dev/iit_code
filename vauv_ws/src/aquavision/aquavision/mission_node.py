@@ -139,9 +139,9 @@ class MissionNode(Node):
         self._cur_r: int = 0
 
         # ── CSV Logger ──────────────────────────────────────────────────
-        self._logger = CSVLogger()
+        self.csv_logger = CSVLogger()
         self.get_logger().info(
-            f'📝 Logging to: {self._logger.filepath}'
+            f'📝 Logging to: {self.csv_logger.filepath}'
         )
 
         # ── Publishers ──────────────────────────────────────────────────
@@ -246,7 +246,7 @@ class MissionNode(Node):
         self._publish_control()
 
         # CSV logging
-        self._logger.log_row(
+        self.csv_logger.log_row(
             state=self._state.value,
             error_x=self._gate_error_x,
             error_y=self._gate_error_y,
@@ -439,7 +439,7 @@ class MissionNode(Node):
 
     def destroy_node(self) -> None:
         """Clean up resources on shutdown."""
-        self._logger.close()
+        self.csv_logger.close()
         super().destroy_node()
 
 

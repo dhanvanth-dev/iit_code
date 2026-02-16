@@ -15,7 +15,11 @@ setup(
         (os.path.join('share', package_name, 'launch'),
             glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
     ],
-    install_requires=['setuptools'],
+    # IMPORTANT: ROS 2 Humble OpenCV requires numpy<2.0
+    install_requires=[
+        'setuptools',
+        'numpy<2.0',
+    ],
     zip_safe=True,
     maintainer='dhanvanth',
     maintainer_email='dhanvanthkrishnan@gmail.com',
