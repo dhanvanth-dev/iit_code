@@ -237,6 +237,14 @@ class NavBridgeNode(Node):
         if self._connected and (now - self._last_heartbeat_time > 5.0):
             self.get_logger().warn('⚠️ Heartbeat timeout — connection lost')
             self._connected = False
+            # Safety: send neutral thrust on heartbeat loss
+            self._cmd_x = 0
+            self._cmd_y = 0
+            self._cmd_z = 500
+            self._cmd_r = 0
+            self.get_logger().warn(
+                '🛑 Neutral thrust commanded on heartbeat loss'
+            )
 
         # Publish state
         state_msg = String()
@@ -250,8 +258,8 @@ class NavBridgeNode(Node):
         if self._master is None:
             return
 
-        # Drain all available messages without blocking
-        while True:
+        # Drain available messages without blocking (cap at 50 per tick)
+        for _ in range(50):
             msg = self._master.recv_match(blocking=False)
             if msg is None:
                 break
@@ -288,6 +296,11 @@ class NavBridgeNode(Node):
             )
         except Exception as e:
             self.get_logger().warn(f'Control send failed: {e}')
+            # Safety: reset to neutral on any exception
+            self._cmd_x = 0
+            self._cmd_y = 0
+            self._cmd_z = 500
+            self._cmd_r = 0
 
     # ── Property accessors ──────────────────────────────────────────────
 

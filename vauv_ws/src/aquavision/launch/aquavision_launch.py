@@ -22,7 +22,13 @@ def generate_launch_description() -> LaunchDescription:
             'model_path': 'best.pt',
             'target_gate_class': 'green_gate',
             'confidence_threshold': 0.5,
-            'inference_rate': 10.0,
+            'inference_rate': 15.0,
+            'camera_id': 0,
+            'camera_width': 640,
+            'camera_height': 480,
+            'use_gstreamer': True,
+            'use_fp16': True,
+            'show_display': True,
         }],
     )
 
@@ -41,14 +47,14 @@ def generate_launch_description() -> LaunchDescription:
         }],
     )
 
-    # ── Mission Node (State Machine) ────────────────────────────────
-    mission_node = Node(
+    # ── Mission Manager (State Machine) ─────────────────────────────
+    mission_manager = Node(
         package='aquavision',
-        executable='mission_node',
-        name='mission_node',
+        executable='mission_manager',
+        name='mission_manager',
         output='screen',
         parameters=[{
-            'tick_rate': 20.0,
+            'tick_rate': 30.0,
             'descend_duration': 5.0,
             'descend_thrust': 700,
             'stabilize_duration': 3.0,
@@ -67,11 +73,12 @@ def generate_launch_description() -> LaunchDescription:
             'pid_vertical_ki': 0.0,
             'pid_vertical_kd': 30.0,
             'neutral_z': 500,
+            'perception_timeout': 2.0,
         }],
     )
 
     return LaunchDescription([
         nav_bridge_node,
         vision_node,
-        mission_node,
+        mission_manager,
     ])

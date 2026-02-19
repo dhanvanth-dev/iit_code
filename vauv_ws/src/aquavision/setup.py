@@ -32,7 +32,7 @@ setup(
         'console_scripts': [
             'vision_node = aquavision.vision_node:main',
             'nav_bridge_node = aquavision.nav_bridge_node:main',
-            'mission_node = aquavision.mission_node:main',
+            'mission_manager = aquavision.mission_manager:main',
         ],
     },
 )
